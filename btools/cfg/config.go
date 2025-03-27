@@ -10,7 +10,7 @@ var log = logging.New(logging.Config{
 	Name:     "config",
 })
 
-func NewConfig[T struct{}](
+func NewConfig[T interface{}](
 	fileName, ext, path string,
 ) *T {
 	var config T
