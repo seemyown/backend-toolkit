@@ -17,15 +17,32 @@ type Store interface {
 	Delete(ctx context.Context, keys ...string) error
 }
 
-type RedisStore struct {
+type Config struct {
+	Host     string
+	Port     string
+	User     string
+	Password string
+	Database int
+}
+
+func (c *Config) addr() string {
+	return fmt.Sprintf("%s:%s", c.Host, c.Port)
+}
+
+type redisStore struct {
 	client *redis.Client
 }
 
-func NewRedisStore(client *redis.Client) *RedisStore {
-	return &RedisStore{client: client}
+func NewRedisStore(cfg Config) Store {
+	client := redis.NewClient(&redis.Options{
+		Addr:     cfg.addr(),
+		Password: cfg.Password,
+		DB:       cfg.Database,
+	})
+	return &redisStore{client: client}
 }
 
-func (s *RedisStore) Set(ctx context.Context, key string, value any, expIn time.Duration) error {
+func (s *redisStore) Set(ctx context.Context, key string, value any, expIn time.Duration) error {
 	data, err := json.Marshal(value)
 	if err != nil {
 		return fmt.Errorf("json marshal err: %w", err)
@@ -33,7 +50,7 @@ func (s *RedisStore) Set(ctx context.Context, key string, value any, expIn time.
 	return s.client.Set(ctx, key, data, expIn).Err()
 }
 
-func (s *RedisStore) Get(ctx context.Context, key string, dest any) error {
+func (s *redisStore) Get(ctx context.Context, key string, dest any) error {
 	data, err := s.client.Get(ctx, key).Bytes()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
@@ -44,11 +61,11 @@ func (s *RedisStore) Get(ctx context.Context, key string, dest any) error {
 	return json.Unmarshal(data, dest)
 }
 
-func (s *RedisStore) Keys(ctx context.Context, pattern string) ([]string, error) {
+func (s *redisStore) Keys(ctx context.Context, pattern string) ([]string, error) {
 	return s.client.Keys(ctx, pattern).Result()
 }
 
-func (s *RedisStore) Scan(ctx context.Context, pattern string, count int64) ([]string, error) {
+func (s *redisStore) Scan(ctx context.Context, pattern string, count int64) ([]string, error) {
 	var (
 		cursor uint64
 		keys   []string
@@ -68,7 +85,7 @@ func (s *RedisStore) Scan(ctx context.Context, pattern string, count int64) ([]s
 	return keys, nil
 }
 
-func (s *RedisStore) Delete(ctx context.Context, keys ...string) error {
+func (s *redisStore) Delete(ctx context.Context, keys ...string) error {
 	if len(keys) == 0 {
 		return nil
 	}
