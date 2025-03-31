@@ -44,6 +44,10 @@ func (r *BaseRepository[T]) GetAll(ctx context.Context, offset, limit int64, arg
 	return make([]*T, 0), exc.RepositoryError("Not implemented")
 }
 
+func (r *BaseRepository[T]) Search(ctx context.Context, offset, limit int64, args ...interface{}) ([]*T, error) {
+	return make([]*T, 0), exc.RepositoryError("Not implemented")
+}
+
 func NewBaseRepository[T any](conn *Database) *BaseRepository[T] {
 	return &BaseRepository[T]{
 		Db:  conn.DB,
