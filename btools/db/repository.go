@@ -20,19 +20,19 @@ type Repository[T any] interface {
 }
 
 type BaseRepository[T any] struct {
-	db  *sqlx.DB
-	trx *Trx
+	Db  *sqlx.DB
+	Trx *Trx
 }
 
-func NewBaseRepository[T any](conn *sqlx.DB) *BaseRepository[T] {
+func NewBaseRepository[T any](conn *Database) *BaseRepository[T] {
 	return &BaseRepository[T]{
-		db:  conn,
-		trx: NewTrx(conn),
+		Db:  conn.DB,
+		Trx: NewTrx(conn.DB),
 	}
 }
 
-func prepareContextSindgleRow[T any](ctx context.Context, db *sqlx.DB, query string, args ...interface{}) (*T, error) {
-	stmt, err := db.PreparexContext(ctx, query)
+func (r *BaseRepository[T]) PrepareContextSindgleRow(ctx context.Context, query string, args ...interface{}) (*T, error) {
+	stmt, err := r.Db.PreparexContext(ctx, query)
 	if err != nil {
 		Logger.Error(err, "failed to prepare statement")
 		return nil, exc.RepositoryError(err.Error())
@@ -50,8 +50,8 @@ func prepareContextSindgleRow[T any](ctx context.Context, db *sqlx.DB, query str
 	return &result, nil
 }
 
-func prepareContextManyRow[T any](ctx context.Context, db *sqlx.DB, query string, args ...interface{}) ([]*T, error) {
-	stmt, err := db.PreparexContext(ctx, query)
+func (r *BaseRepository[T]) PrepareContextManyRow(ctx context.Context, query string, args ...interface{}) ([]*T, error) {
+	stmt, err := r.Db.PreparexContext(ctx, query)
 	if err != nil {
 		Logger.Error(err, "failed to prepare statement")
 		return nil, exc.RepositoryError(err.Error())
