@@ -19,8 +19,8 @@ type Repository[T any] interface {
 	Get(ctx context.Context, id int64) (*T, error)
 	Update(ctx context.Context, entity *T) error
 	Delete(ctx context.Context, id int64) error
-	GetAll(ctx context.Context, offset, limit int64, args ...interface{}) ([]*T, error)
-	Search(ctx context.Context, offset, limit int64, args ...interface{}) ([]*T, error)
+	GetAll(ctx context.Context, args ...interface{}) ([]*T, error)
+	Search(ctx context.Context, args ...interface{}) ([]*T, error)
 }
 
 type BaseRepository[T any] struct {
@@ -40,11 +40,11 @@ func (r *BaseRepository[T]) Delete(ctx context.Context, id int64) error {
 	return exc.RepositoryError("Not implemented")
 }
 
-func (r *BaseRepository[T]) GetAll(ctx context.Context, offset, limit int64, args ...interface{}) ([]*T, error) {
+func (r *BaseRepository[T]) GetAll(ctx context.Context, args ...interface{}) ([]*T, error) {
 	return make([]*T, 0), exc.RepositoryError("Not implemented")
 }
 
-func (r *BaseRepository[T]) Search(ctx context.Context, offset, limit int64, args ...interface{}) ([]*T, error) {
+func (r *BaseRepository[T]) Search(ctx context.Context, args ...interface{}) ([]*T, error) {
 	return make([]*T, 0), exc.RepositoryError("Not implemented")
 }
 
