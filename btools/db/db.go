@@ -65,7 +65,10 @@ func SelectOne[T any](db *sqlx.DB, ctx context.Context, query string, args ...in
 
 func SelectMany[T any](db *sqlx.DB, ctx context.Context, query string, args ...interface{}) ([]*T, error) {
 	var result []*T
-	if err := db.SelectContext(ctx, &result, query, args...); err != nil {
+
+	arguments := append([]interface{}(nil), args...)
+
+	if err := db.SelectContext(ctx, &result, query, arguments...); err != nil {
 		Logger.Error(err, "failed to execute query %s, %v", query, args)
 		return nil, exc.RepositoryError(err.Error())
 	}

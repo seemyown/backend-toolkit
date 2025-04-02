@@ -91,7 +91,10 @@ func (r *BaseRepository[T]) SelectOne(ctx context.Context, query string, args ..
 
 func (r *BaseRepository[T]) SelectMany(ctx context.Context, query string, args ...interface{}) ([]*T, error) {
 	var result []*T
-	if err := r.Db.SelectContext(ctx, &result, query, args...); err != nil {
+
+	arguments := append([]interface{}(nil), args...)
+
+	if err := r.Db.SelectContext(ctx, &result, query, arguments...); err != nil {
 		Logger.Error(err, "failed to execute query %s, %v", query, args)
 		if errors.Is(err, sql.ErrNoRows) {
 			return make([]*T, 0), nil
