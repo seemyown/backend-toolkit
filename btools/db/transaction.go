@@ -11,18 +11,18 @@ import (
 var trxLogger = log.NewSubLogger("trx")
 
 type Transaction interface {
-	exec(ctx context.Context, fn func(tx *sqlx.Tx) error) error
+	Exec(ctx context.Context, fn func(tx *sqlx.Tx) error) error
 }
 
 type trx struct {
 	db *sqlx.DB
 }
 
-func NewTrx(db *sqlx.DB) Transaction {
-	return &trx{db: db}
+func NewTrx(db *Database) Transaction {
+	return &trx{db: db.DB}
 }
 
-func (t *trx) exec(ctx context.Context, fn func(tx *sqlx.Tx) error) error {
+func (t *trx) Exec(ctx context.Context, fn func(tx *sqlx.Tx) error) error {
 	tx, err := t.db.BeginTxx(ctx, nil)
 	if err != nil {
 		log.Error(err, "Error starting transaction")

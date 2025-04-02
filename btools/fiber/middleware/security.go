@@ -13,16 +13,24 @@ import (
 
 var jwtLog = log.NewSubLogger("jwt_middleware")
 
-func JWTMiddleware(authHeaderKeyName, tokenType, secret string, out interface{}) fiber.Handler {
+type JwtMiddlewareConfig struct {
+	Secret      string
+	AuthKeyName string
+	TokenType   string
+	Issuer      string
+	Out         interface{}
+}
+
+func JWTMiddleware(config *JwtMiddlewareConfig) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		headerValue := ctx.Get(authHeaderKeyName)
+		headerValue := ctx.Get(config.AuthKeyName)
 		if headerValue == "" {
 			jwtLog.Warn("no auth header found")
 			return ctx.Next()
 		}
 
 		var tokenString string
-		if tokenType == "Bearer" {
+		if config.TokenType == "Bearer" {
 			t, err := extractToken(headerValue)
 			if err != nil {
 				jwtLog.Error(err, "error extracting token")
@@ -37,7 +45,7 @@ func JWTMiddleware(authHeaderKeyName, tokenType, secret string, out interface{})
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 			}
-			return []byte(secret), nil
+			return []byte(config.Secret), nil
 		})
 
 		if err != nil || !token.Valid {
@@ -54,7 +62,12 @@ func JWTMiddleware(authHeaderKeyName, tokenType, secret string, out interface{})
 			return exc.ForbiddenError("invalid_token", "bad claims")
 		}
 
-		mappedData := reflect.New(reflect.TypeOf(out)).Interface()
+		if claims["iss"] != config.Issuer {
+			jwtLog.Error(errors.New("wrong issuer"), "Incorrect issuer")
+			return exc.ForbiddenError("wrong_issuer", "Wrong token issuer")
+		}
+
+		mappedData := reflect.New(reflect.TypeOf(config.Out)).Interface()
 		if err := mapstructure.Decode(claims, mappedData); err != nil {
 			jwtLog.Error(err, "Token mapping error")
 			return exc.ForbiddenError("invalid_token", "claims mapping error")
@@ -78,16 +91,21 @@ func extractToken(token string) (string, error) {
 	return parts[1], nil
 }
 
-func APIKeyMiddleware(headerName, headerValue string) fiber.Handler {
+type ApiKeyMiddlewareConfig struct {
+	Secret      string
+	AuthKeyName string
+}
+
+func APIKeyMiddleware(config *ApiKeyMiddlewareConfig) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		authHeader := c.Get(headerName)
+		authHeader := c.Get(config.AuthKeyName)
 		if authHeader == "" {
 			return exc.ForbiddenError("missing_api_key", "Missing API key")
 		}
-		if authHeader != headerValue {
+		if authHeader != config.Secret {
 			return exc.ForbiddenError("invalid_api_key", "Wrong API key")
 		}
-		jwtLog.Info("Incoming request with %s: %s", headerName, authHeader)
+		jwtLog.Info("Incoming request with %s: %s", config.AuthKeyName, authHeader)
 		return c.Next()
 	}
 }

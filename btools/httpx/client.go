@@ -8,14 +8,22 @@ import (
 	"time"
 )
 
-type RestClient struct {
+type RestClient interface {
+	Get(ctx context.Context, endpoint string, queryParams map[string]string, timeout time.Duration, maxAttempts int) (*resty.Response, error)
+	Post(ctx context.Context, endpoint string, queryParams map[string]string, requestBody interface{}, timeout time.Duration) (*resty.Response, error)
+	Put(ctx context.Context, endpoint string, queryParams map[string]string, requestBody interface{}, timeout time.Duration) (*resty.Response, error)
+	Patch(ctx context.Context, endpoint string, queryParams map[string]string, requestBody interface{}, timeout time.Duration) (*resty.Response, error)
+	Delete(ctx context.Context, endpoint string, queryParams map[string]string, timeout time.Duration) (*resty.Response, error)
+}
+
+type restClient struct {
 	client  *resty.Client
 	rootURL string
 	headers map[string]string
 	logger  logging.Logger
 }
 
-func NewRestClient(rootURL string, headers map[string]string, logger *logging.Logger) *RestClient {
+func NewRestClient(rootURL string, headers map[string]string, logger *logging.Logger) RestClient {
 	client := resty.New().SetBaseURL(rootURL).SetTimeout(60 * time.Second)
 	if headers != nil {
 		client.SetHeaders(headers)
@@ -23,7 +31,7 @@ func NewRestClient(rootURL string, headers map[string]string, logger *logging.Lo
 	if logger == nil {
 		logger = logging.New(logging.Config{FileName: "rest_cleint", Name: "client"})
 	}
-	return &RestClient{
+	return &restClient{
 		client:  client,
 		rootURL: rootURL,
 		headers: headers,
@@ -31,7 +39,7 @@ func NewRestClient(rootURL string, headers map[string]string, logger *logging.Lo
 	}
 }
 
-func (rc *RestClient) requestBuilder(
+func (rc *restClient) requestBuilder(
 	ctx context.Context,
 	queryParams map[string]string,
 	requestBody interface{},
@@ -50,7 +58,7 @@ func (rc *RestClient) requestBuilder(
 	return req
 }
 
-func (rc *RestClient) MakeGetRequest(
+func (rc *restClient) Get(
 	ctx context.Context,
 	endpoint string,
 	queryParams map[string]string,
@@ -72,7 +80,7 @@ func (rc *RestClient) MakeGetRequest(
 	return nil, fmt.Errorf("failed to get response from endpoint %s", endpoint)
 }
 
-func (rc *RestClient) MakePostRequest(
+func (rc *restClient) Post(
 	ctx context.Context,
 	endpoint string,
 	queryParams map[string]string,
@@ -83,7 +91,7 @@ func (rc *RestClient) MakePostRequest(
 	return req.Post(endpoint)
 }
 
-func (rc *RestClient) MakePutRequest(
+func (rc *restClient) Put(
 	ctx context.Context,
 	endpoint string,
 	queryParams map[string]string,
@@ -94,7 +102,7 @@ func (rc *RestClient) MakePutRequest(
 	return req.Put(endpoint)
 }
 
-func (rc *RestClient) MakePatchRequest(
+func (rc *restClient) Patch(
 	ctx context.Context,
 	endpoint string,
 	queryParams map[string]string,
@@ -105,7 +113,7 @@ func (rc *RestClient) MakePatchRequest(
 	return req.Patch(endpoint)
 }
 
-func (rc *RestClient) MakeDeleteRequest(
+func (rc *restClient) Delete(
 	ctx context.Context,
 	endpoint string,
 	queryParams map[string]string,
