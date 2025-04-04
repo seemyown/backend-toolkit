@@ -2,12 +2,9 @@ package db
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	"github.com/seemyown/backend-toolkit/btools/exc"
 	"github.com/seemyown/backend-toolkit/btools/logging"
 )
 
@@ -55,10 +52,7 @@ func SelectOne[T any](db *sqlx.DB, ctx context.Context, query string, args ...in
 	var result T
 	if err := db.GetContext(ctx, &result, query, args...); err != nil {
 		Logger.Error(err, "failed to execute query %s, %v", query, args)
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, exc.RepositoryError(err.Error())
+		return nil, WrapError(err)
 	}
 	return &result, nil
 }
@@ -68,7 +62,7 @@ func SelectMany[T any](db *sqlx.DB, ctx context.Context, query string, args ...i
 
 	if err := db.SelectContext(ctx, &result, query, args...); err != nil {
 		Logger.Error(err, "failed to execute query %s, %v", query, args)
-		return nil, exc.RepositoryError(err.Error())
+		return nil, WrapError(err)
 	}
 	return result, nil
 }
