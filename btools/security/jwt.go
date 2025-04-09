@@ -23,7 +23,7 @@ var defaultPayload = map[string]interface{}{
 
 func GenerateJWTToken(
 	tokenPayload, tokenSettings map[string]interface{},
-	secretKey string, singMethod *jwt.SigningMethodHMAC,
+	secretKey string, singMethod jwt.SigningMethod,
 ) (string, error) {
 	claims := jwt.MapClaims{}
 
@@ -37,7 +37,14 @@ func GenerateJWTToken(
 		claims[k] = v
 	}
 
-	token := jwt.NewWithClaims(singMethod, claims)
+	var sign jwt.SigningMethod
+	if singMethod == nil {
+		sign = jwt.SigningMethodHS256
+	} else {
+		sign = singMethod
+	}
+
+	token := jwt.NewWithClaims(sign, claims)
 
 	signedToken, err := token.SignedString([]byte(secretKey))
 	if err != nil {
