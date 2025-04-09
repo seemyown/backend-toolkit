@@ -35,7 +35,7 @@ func ErrorMiddleware(locale string) fiber.Handler {
 				db.MapToHttpError[repositoryErr.Code],
 			)
 		} else if !errors.As(err, &appErr) {
-			appErr = exc.InternalServerError("Unckown error")
+			appErr = exc.InternalServerError("Unknown error")
 		}
 
 		errLogger.Error(err, "Request error %+v", appErr)
