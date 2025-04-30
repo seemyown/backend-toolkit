@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/seemyown/backend-toolkit/btools/exc"
 	"github.com/seemyown/backend-toolkit/btools/logging"
 )
 
@@ -65,4 +66,35 @@ func SelectMany[T any](db *sqlx.DB, ctx context.Context, query string, args ...i
 		return nil, WrapError(err)
 	}
 	return result, nil
+}
+
+func SelectIn[T any](ctx context.Context, db *sqlx.DB, dest *[]T, query string, inArgs any) error {
+	q, args, err := sqlx.In(query, inArgs)
+	if err != nil {
+		return exc.RepositoryError(err.Error())
+	}
+
+	q = db.Rebind(q)
+
+	if err := db.SelectContext(ctx, dest, q, args...); err != nil {
+		return WrapError(err)
+	}
+
+	return nil
+}
+
+func PrepareAndExec[T any](ctx context.Context, tx *sqlx.Tx, query string, items []*T, execFn func(*sqlx.Stmt, *T) error) error {
+	stmt, err := tx.PreparexContext(ctx, query)
+	if err != nil {
+
+		return exc.RepositoryError(err.Error())
+	}
+	defer func() { _ = stmt.Close() }()
+
+	for _, item := range items {
+		if err := execFn(stmt, item); err != nil {
+			return WrapError(err)
+		}
+	}
+	return nil
 }
