@@ -2,6 +2,15 @@ module github.com/seemyown/backend-toolkit
 
 go 1.23.5
 
+retract (
+	v1.0.6
+    v1.0.5
+    v1.0.4
+    v1.0.3
+    v1.0.2
+    v1.0.1
+)
+
 require (
 	github.com/go-resty/resty/v2 v2.16.5
 	github.com/gofiber/fiber/v2 v2.52.6
