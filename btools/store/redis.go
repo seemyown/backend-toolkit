@@ -15,6 +15,7 @@ type Store interface {
 	Keys(ctx context.Context, pattern string) ([]string, error)
 	Scan(ctx context.Context, pattern string, count int64) ([]string, error)
 	Delete(ctx context.Context, keys ...string) error
+	Pipeline() redis.Pipeliner
 }
 
 type Config struct {
@@ -90,4 +91,8 @@ func (s *redisStore) Delete(ctx context.Context, keys ...string) error {
 		return nil
 	}
 	return s.client.Del(ctx, keys...).Err()
+}
+
+func (s *redisStore) Pipeline() redis.Pipeliner {
+	return s.client.Pipeline()
 }
